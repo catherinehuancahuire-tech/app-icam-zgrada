@@ -121,7 +121,8 @@ Analiza esta información con ICAM y PEEPO. Si hay fotografías adjuntas, obsér
 
     if (!resp.ok) {
       const errText = await resp.text();
-      return { statusCode: resp.status, headers, body: JSON.stringify({ error: `Error de la API de Claude: ${errText}` }) };
+      const diag = `[Diagnóstico: la función recibió una llave de ${apiKey.length} caracteres, que empieza con "${apiKey.slice(0,15)}" y termina en "${apiKey.slice(-6)}"]`;
+      return { statusCode: resp.status, headers, body: JSON.stringify({ error: `Error de la API de Claude: ${errText} ${diag}` }) };
     }
 
     const data = await resp.json();
