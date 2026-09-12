@@ -23224,6 +23224,7 @@ let aiState = 'idle'; // idle | loading | done | error
 let aiError = '';
 let aiPreguntasFaltantes = [];
 let aiConfianza = '';
+let aiAccionesSugeridas = false;
 
 const ANALYZE_ENDPOINT = '/.netlify/functions/analyze';
 
@@ -23256,6 +23257,17 @@ async function runAiAnalysis(){
     };
     aiPreguntasFaltantes = Array.isArray(data.preguntasFaltantes) ? data.preguntasFaltantes : [];
     aiConfianza = data.confianza || '';
+    const sugeridas = Array.isArray(data.accionesCorrectivasSugeridas) ? data.accionesCorrectivasSugeridas : [];
+    if(S.acciones.length === 0){
+      S.acciones = sugeridas
+        .filter(a => a && (a.accion || '').trim())
+        .map(a => ({
+          texto: (a.accion || '').trim(),
+          resp: (a.responsableSugerido || '').trim() || '-',
+          plazo: (a.plazoSugerido || '').trim() || '-',
+        }));
+      aiAccionesSugeridas = S.acciones.length > 0;
+    }
     aiState = 'done';
   }catch(err){
     aiError = err.message || 'Error desconocido';
@@ -23503,6 +23515,7 @@ function screenHTML(i){
       <div class="summary-item"><span>Barreras / acciones inmediatas</span><b>${S.icamAnalysis.barreras.length + S.icamAnalysis.accionesInmediatas.length}</b></div>
       <div class="summary-item"><span>Factores contribuyentes / organizacionales</span><b>${S.icamAnalysis.factoresContribuyentes.length + S.icamAnalysis.factoresOrganizacionales.length}</b></div>
       <div class="section-divider">ACCIONES CORRECTIVAS</div>
+      ${aiAccionesSugeridas && S.acciones.length ? `<div class="hint-banner">Estas acciones fueron sugeridas automáticamente por la IA a partir del análisis. Puedes editarlas, eliminarlas o agregar más antes de continuar.</div>` : ''}
       <div id="accionList">${S.acciones.map((a,idx)=>`<div class="card"><span class="card-del" data-idx="${idx}">eliminar</span><div class="card-title">${a.texto}</div><div class="card-meta">Resp: ${a.resp} · ${a.plazo}</div></div>`).join('')}</div>
       <div class="field"><label>Acción</label><input id="f_accTexto" placeholder="Reforzar capacitación LOTO"></div>
       <div class="field-row">
@@ -23595,7 +23608,7 @@ function bindScreen(){
       restartBtn.onclick = () => {
         cur=0;
         lastBlobUrl = null; lastPdfBlobUrl = null;
-        aiState = 'idle'; aiError = ''; aiPreguntasFaltantes = []; aiConfianza = '';
+        aiState = 'idle'; aiError = ''; aiPreguntasFaltantes = []; aiConfianza = ''; aiAccionesSugeridas = false;
         Object.assign(S,{
           admin:{empresa:"",ruc:"",domicilio:"",departamento:"",provincia:"",distrito:"",actividadEconomica:"",numTrabH:"",numTrabM:"",contratista:"",trabajador:"",dni:"",puesto:"",edad:"",sexo:"",antiguedad:"",tipoContrato:"",sctr:"Sí",aseguradora:""},
           registro:{fecha:"",hora:"",area:"",actividad:"",tipo:"Incidente",desc:"",naturalezaLesion:"",parteCuerpo:"",diasDescanso:""},
