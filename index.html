@@ -23228,6 +23228,37 @@ let aiAccionesSugeridas = false;
 
 const ANALYZE_ENDPOINT = '/.netlify/functions/analyze';
 
+// Comprime/redimensiona una foto antes de guardarla, para que el análisis con IA
+// no se pase del límite de tiempo de la función por fotos muy pesadas (fotos de
+// cámara sin comprimir pueden pesar varios MB cada una).
+function resizeImageFile(file, maxDim, quality){
+  maxDim = maxDim || 1600; quality = quality || 0.72;
+  return new Promise((resolve, reject)=>{
+    const reader = new FileReader();
+    reader.onload = ()=>{
+      const img = new Image();
+      img.onload = ()=>{
+        let w = img.width, h = img.height;
+        if(w > maxDim || h > maxDim){
+          if(w >= h){ h = Math.round(h * (maxDim / w)); w = maxDim; }
+          else { w = Math.round(w * (maxDim / h)); h = maxDim; }
+        }
+        try{
+          const canvas = document.createElement('canvas');
+          canvas.width = w; canvas.height = h;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, w, h);
+          resolve(canvas.toDataURL('image/jpeg', quality));
+        }catch(err){ resolve(reader.result); } // si falla el canvas, usar la original
+      };
+      img.onerror = ()=> resolve(reader.result); // si falla la imagen, usar la original
+      img.src = reader.result;
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
 async function runAiAnalysis(){
   aiState = 'loading'; render();
   try{
@@ -23244,8 +23275,14 @@ async function runAiAnalysis(){
       headers: {'Content-Type':'application/json'},
       body: JSON.stringify(payload),
     });
-    const data = await res.json();
-    if(!res.ok){ throw new Error(data.error || ('Error HTTP ' + res.status)); }
+    let data;
+    try{ data = await res.json(); }catch(e){ data = {}; }
+    if(!res.ok){
+      const msg = data.error || (res.status === 502
+        ? 'El análisis tardó demasiado y se cortó (probablemente por fotos muy pesadas o conexión lenta). Intenta de nuevo con menos fotos.'
+        : ('Error HTTP ' + res.status));
+      throw new Error(msg);
+    }
     S.icam = Array.isArray(data.icam) ? data.icam : [];
     S.icamAnalysis = {
       eventoConsecuencias: data.icamAnalysis?.eventoConsecuencias || '',
@@ -23632,9 +23669,7 @@ function bindScreen(){
       const files = Array.from(e.target.files);
       let remaining = files.length;
       files.forEach(f=>{
-        const reader = new FileReader();
-        reader.onload = ()=>{ S.evidencias.push(reader.result); remaining--; if(remaining===0) render(); };
-        reader.readAsDataURL(f);
+        resizeImageFile(f).then(dataUrl=>{ S.evidencias.push(dataUrl); remaining--; if(remaining===0) render(); });
       });
     };
     document.getElementById('photoGrid').onclick = (e)=>{
