@@ -23232,7 +23232,7 @@ const ANALYZE_ENDPOINT = '/.netlify/functions/analyze';
 // no se pase del límite de tiempo de la función por fotos muy pesadas (fotos de
 // cámara sin comprimir pueden pesar varios MB cada una).
 function resizeImageFile(file, maxDim, quality){
-  maxDim = maxDim || 1600; quality = quality || 0.72;
+  maxDim = maxDim || 1100; quality = quality || 0.6;
   return new Promise((resolve, reject)=>{
     const reader = new FileReader();
     reader.onload = ()=>{
