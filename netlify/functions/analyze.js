@@ -107,7 +107,9 @@ Analiza esta información con ICAM y PEEPO. Si hay fotografías adjuntas, obsér
 
   content.push({ type: "text", text: textoResumen });
 
-  const imgs = (evidencias || []).slice(0, 5);
+  // Máximo 3 fotos: cada foto de más suma tiempo de procesamiento y puede hacer
+  // que la función se pase del límite de 30s de Netlify (timeout → error 502/504).
+  const imgs = (evidencias || []).slice(0, 3);
   for (const img of imgs) {
     if (!img.dataUrl) continue;
     const match = img.dataUrl.match(/^data:(image\/\w+);base64,(.+)$/);
@@ -128,7 +130,7 @@ Analiza esta información con ICAM y PEEPO. Si hay fotografías adjuntas, obsér
       },
       body: JSON.stringify({
         model: "claude-sonnet-4-6",
-        max_tokens: 2000,
+        max_tokens: 1300,
         system: SYSTEM_PROMPT,
         messages: [{ role: "user", content }],
       }),
