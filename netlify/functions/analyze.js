@@ -130,7 +130,10 @@ Analiza esta información con ICAM y PEEPO. Si hay fotografías adjuntas, obsér
       },
       body: JSON.stringify({
         model: "claude-sonnet-4-6",
-        max_tokens: 1300,
+        // 1800 en vez de 2000: deja margen de tiempo (menos tokens a generar = más rápido),
+        // pero suficiente para que el JSON completo (con RISST) no se corte a la mitad
+        // (con 1300 se cortaba antes de terminar -> "La IA no devolvió un JSON válido").
+        max_tokens: 1800,
         system: SYSTEM_PROMPT,
         messages: [{ role: "user", content }],
       }),
@@ -144,13 +147,30 @@ Analiza esta información con ICAM y PEEPO. Si hay fotografías adjuntas, obsér
 
     const data = await resp.json();
     const rawText = (data.content || []).map(b => b.text || "").join("").trim();
+    const cutOff = data.stop_reason === "max_tokens";
 
     let parsed;
     try {
       const cleaned = rawText.replace(/^```json\s*|```$/g, "").trim();
       parsed = JSON.parse(cleaned);
     } catch (e) {
-      return { statusCode: 502, headers, body: JSON.stringify({ error: "La IA no devolvió un JSON válido.", raw: rawText }) };
+      // Intento de rescate: si vino texto extra antes/después del JSON, extraer solo
+      // el bloque entre la primera "{" y la última "}" y volver a intentar.
+      try {
+        const start = rawText.indexOf("{");
+        const end = rawText.lastIndexOf("}");
+        if (start !== -1 && end !== -1 && end > start) {
+          parsed = JSON.parse(rawText.slice(start, end + 1));
+        }
+      } catch (e2) {
+        parsed = null;
+      }
+      if (!parsed) {
+        const msg = cutOff
+          ? "La respuesta de la IA se cortó antes de terminar (demasiado larga). Intenta de nuevo con menos fotos o una descripción más breve."
+          : "La IA no devolvió un JSON válido.";
+        return { statusCode: 502, headers, body: JSON.stringify({ error: msg, raw: rawText }) };
+      }
     }
 
     return { statusCode: 200, headers, body: JSON.stringify(parsed) };
