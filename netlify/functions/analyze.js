@@ -47,6 +47,7 @@ Reglas estrictas:
 - Cada hallazgo PEEPO debe ser una frase breve y concreta, basada en evidencia real citada en la descripción o visible en las fotos.
 - Para "accionesCorrectivasSugeridas": propón entre 2 y 5 acciones correctivas concretas y accionables, derivadas directamente de las causas inmediatas, básicas y factores identificados (no genéricas). Para "responsableSugerido" usa SIEMPRE uno de los cargos reales de ZGRADA listados en la REFERENCIA INTERNA de arriba, nunca un cargo genérico inventado (por ejemplo, no uses "Jefe SSOMA") ni un nombre propio de persona salvo que la información proporcionada ya indique explícitamente quién debe asumirla. Para "plazoSugerido" usa un plazo razonable en días, coherente con la gravedad del caso y con los plazos del RISST de ZGRADA y de la Ley 29783 / DS 005-2012-TR cuando apliquen.
 - "confianza" refleja qué tan completa es la información recibida para sustentar el análisis.
+- Sé breve y directo en cada campo de texto (máximo ~20 palabras por frase) para que la respuesta sea rápida de generar. No repitas información entre secciones.
 - Responde ÚNICAMENTE con el JSON, sin explicaciones, sin markdown, sin backticks.`;
 
 exports.handler = async (event) => {
@@ -107,9 +108,9 @@ Analiza esta información con ICAM y PEEPO. Si hay fotografías adjuntas, obsér
 
   content.push({ type: "text", text: textoResumen });
 
-  // Máximo 3 fotos: cada foto de más suma tiempo de procesamiento y puede hacer
+  // Máximo 2 fotos: cada foto de más suma tiempo de procesamiento y puede hacer
   // que la función se pase del límite de 30s de Netlify (timeout → error 502/504).
-  const imgs = (evidencias || []).slice(0, 3);
+  const imgs = (evidencias || []).slice(0, 2);
   for (const img of imgs) {
     if (!img.dataUrl) continue;
     const match = img.dataUrl.match(/^data:(image\/\w+);base64,(.+)$/);
@@ -130,10 +131,10 @@ Analiza esta información con ICAM y PEEPO. Si hay fotografías adjuntas, obsér
       },
       body: JSON.stringify({
         model: "claude-sonnet-4-6",
-        // 1800 en vez de 2000: deja margen de tiempo (menos tokens a generar = más rápido),
-        // pero suficiente para que el JSON completo (con RISST) no se corte a la mitad
+        // 1600: suficiente para que el JSON completo (con RISST) no se corte a la mitad,
+        // pero sin pedir tanto texto que la respuesta tarde más de lo necesario.
         // (con 1300 se cortaba antes de terminar -> "La IA no devolvió un JSON válido").
-        max_tokens: 1800,
+        max_tokens: 1600,
         system: SYSTEM_PROMPT,
         messages: [{ role: "user", content }],
       }),
