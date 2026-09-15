@@ -1,4 +1,3 @@
-
 // netlify/functions/analyze.js
 //
 // Esta función corre en el SERVIDOR de Netlify (nunca en el celular del usuario).
@@ -22,7 +21,7 @@ REFERENCIA INTERNA — RISST de ZGRADA INGENIEROS S.A.C. (úsala para que tus re
 - Plazos internos de referencia del RISST (úsalos cuando la acción correctiva sea de investigación/reporte, no de ejecución de fondo): reporte preliminar de incidente el mismo día del evento; informe de investigación de incidente dentro de 5 días hábiles; informe de accidente dentro de 24 horas de ocurrido. Para acciones correctivas de fondo (capacitación, cambio de procedimiento, mantenimiento o reemplazo de equipos, señalización, etc.) usa un plazo razonable en días según la gravedad, siguiendo el criterio del RISST de hacer seguimiento "dentro del plazo establecido".
 - Usa terminología propia del RISST cuando aplique: "Análisis de Seguridad del Trabajo (AST)", "Permiso de Trabajo", "Identificación de Peligros y Evaluación de Riesgos (IPERC)", "actos y condiciones subestándares".
  
-Tu tarea: a partir de la información objetiva que te da un prevencionista (descripción del suceso, actividad, testigos, clasificación — en texto, sin fotos), realizar el análisis PEEPO e ICAM conforme a la Ley 29783/DS 005-2012-TR y al RISST de ZGRADA, sugerir acciones correctivas, y devolver SOLO un objeto JSON válido con esta forma exacta, sin texto adicional antes ni después:
+Tu tarea: a partir de la información objetiva que te da un prevencionista (descripción del suceso, actividad, evidencia fotográfica, testigos, clasificación), realizar el análisis PEEPO e ICAM conforme a la Ley 29783/DS 005-2012-TR y al RISST de ZGRADA, sugerir acciones correctivas, y devolver SOLO un objeto JSON válido con esta forma exacta, sin texto adicional antes ni después:
  
 {
   "icam": [ { "texto": "hallazgo breve", "peepo": "P" | "E-Entorno" | "E-Equipos" | "Proc" | "O" } ],
@@ -47,18 +46,18 @@ Tu tarea: a partir de la información objetiva que te da un prevencionista (desc
 }
  
 Reglas estrictas:
-- NUNCA inventes datos, nombres, fechas o hechos que no estén en la información de texto proporcionada.
+- NUNCA inventes datos, nombres, fechas o hechos que no estén en la información proporcionada o visibles en las fotos.
 - Si la información es insuficiente para un campo, dilo en "preguntasFaltantes" (preguntas específicas y breves) y deja ese campo con un array vacío o string vacío — no lo rellenes con suposiciones.
-- Cada hallazgo PEEPO debe ser una frase breve y concreta, basada en evidencia real citada en la descripción.
-- CAUSAS INMEDIATAS (lo observable): "actosSubestandares" = comportamiento inseguro de una persona (ej. sin autorización, sin EPP, anuló un seguro, velocidad/postura insegura; máx. 5). "condicionesSubestandares" = condición insegura del lugar/equipo (ej. resguardo ausente, herramienta defectuosa, orden/limpieza, señalización, iluminación; máx. 3, el formato solo tiene 3 filas). Cada ítem: frase breve + evidencia entre paréntesis citando la parte de la descripción que la sustenta (ej. "No usó arnés (según descripción)"). Sin evidencia real en el texto, no lo incluyas.
+- Cada hallazgo PEEPO debe ser una frase breve y concreta, basada en evidencia real citada en la descripción o visible en las fotos.
+- CAUSAS INMEDIATAS (lo observable): "actosSubestandares" = comportamiento inseguro de una persona (ej. sin autorización, sin EPP, anuló un seguro, velocidad/postura insegura; máx. 5). "condicionesSubestandares" = condición insegura del lugar/equipo (ej. resguardo ausente, herramienta defectuosa, orden/limpieza, señalización, iluminación; máx. 3, el formato solo tiene 3 filas). Cada ítem: frase breve + evidencia entre paréntesis (ej. "No usó arnés (foto)"). Sin evidencia real, no lo incluyas.
 - CAUSAS BÁSICAS (raíz — derívalas de las causas inmediatas y la evidencia, nunca inventadas): "factoresPersonales" = falta de capacitación/habilidad, fatiga, motivación (máx. 5). "factoresTrabajo" = supervisión deficiente, AST/IPERC inexistente o incompleto, mantenimiento, diseño de ingeniería, compras (máx. 3). Evidencia breve entre paréntesis en cada ítem; sin base suficiente, indícalo en "preguntasFaltantes" en vez de inventar.
 - "accionesCorrectivasSugeridas" (2 a 5, cada una ligada a una causa ya identificada, nunca genérica/repetida): aplica la JERARQUÍA DE CONTROLES (eliminación > sustitución > ingeniería > administrativos > EPP) — prioriza el control más eficaz viable, no solo capacitación/EPP. "responsableSugerido": SIEMPRE un cargo real de ZGRADA (arriba), nunca inventado. "plazoSugerido": días, según gravedad/RISST/Ley 29783. "medioVerificacion": cómo se comprobará (ej. "reporte fotográfico", "check-list firmado"). Nunca inventes artículos legales ni disposiciones del RISST no dadas. Sin info suficiente, no generes la acción — indícalo en "preguntasFaltantes".
 - "confianza" refleja qué tan completa es la información recibida para sustentar el análisis.
 - Para "danoPotencial" (sección 10 del formato, DAÑO POTENCIAL — distinta de la lesión/daño real ya registrado):
-  * "naturaleza": si "tipo" es "Incidente" (cuasi-accidente, sin daño real), describe el daño POTENCIAL que pudo haber ocurrido si las circunstancias hubieran sido distintas, con frases tipo "Potencial de [golpe/corte/fractura/caída a distinto nivel/atrapamiento/quemadura/electrocución/lesión grave/fatalidad/etc.]", basándote en la descripción. Si "tipo" es "Accidente leve" o "Accidente grave" (ya hubo daño real registrado), deja este campo como string vacío "" salvo que identifiques un riesgo adicional claro que no se materializó.
+  * "naturaleza": si "tipo" es "Incidente" (cuasi-accidente, sin daño real), describe el daño POTENCIAL que pudo haber ocurrido si las circunstancias hubieran sido distintas, con frases tipo "Potencial de [golpe/corte/fractura/caída a distinto nivel/atrapamiento/quemadura/electrocución/lesión grave/fatalidad/etc.]", basándote en la descripción y fotos. Si "tipo" es "Accidente leve" o "Accidente grave" (ya hubo daño real registrado), deja este campo como string vacío "" salvo que identifiques un riesgo adicional claro que no se materializó.
   * "costoRealDetalle": breve (máx. 12 palabras). Si no hubo daño real (fue un incidente), escribe algo como "S/ 0.00 (sin daño real)". Si sí hubo daño/lesión real, NO inventes una cifra exacta salvo que la información la mencione explícitamente — en su lugar indica qué factores deben considerarse (ej: "Por determinar — incluye atención médica y horas-hombre perdidas").
   * "costoPotencialDetalle": breve (máx. 12 palabras). NUNCA inventes un monto exacto — usa algo como "Por determinar según el daño que pudo haberse producido", salvo que la información dé una base real para estimarlo.
-  * "objetoRelacionado": identifica automáticamente el objeto, herramienta, equipo, material o sustancia directamente relacionado con el contacto (ej: "Amoladora eléctrica + disco de corte", "Andamio metálico", "Thinner/solvente"), a partir de la descripción — el prevencionista NO debe tener que escribirlo a mano. Si no hay información suficiente para identificarlo, deja el campo vacío "" (no inventes un objeto que no se mencione en el texto).
+  * "objetoRelacionado": identifica automáticamente el objeto, herramienta, equipo, material o sustancia directamente relacionado con el contacto (ej: "Amoladora eléctrica + disco de corte", "Andamio metálico", "Thinner/solvente"), a partir de la descripción y las fotos — el prevencionista NO debe tener que escribirlo a mano. Si no hay información suficiente para identificarlo, deja el campo vacío "" (no inventes un objeto que no se mencione ni se vea en las fotos).
 - Sé breve y directo en cada campo de texto (máximo ~15 palabras por causa, incluida la evidencia entre paréntesis; máximo ~18 palabras por acción correctiva; máximo ~8 palabras por "medioVerificacion") para que la respuesta sea rápida de generar. No repitas información entre secciones.
 - Responde ÚNICAMENTE con el JSON, sin explicaciones, sin markdown, sin backticks.`;
  
@@ -96,7 +95,7 @@ exports.handler = async (event) => {
     fecha, hora, area, actividad, tipo, descripcion,
     naturalezaLesion, parteCuerpo, diasDescanso,
     entrevistas, clasifGravedad, clasifProbabilidad,
-    // Nota: "evidencias" (fotos) YA NO se envían a la IA — ver abajo por qué.
+    evidencias, // array of { dataUrl } — imágenes en base64
   } = payload;
  
   const textoResumen = `
@@ -112,16 +111,25 @@ DATOS DEL SUCESO:
 - Personas involucradas / testigos: ${(entrevistas || []).map(e => `${e.nombre} (${e.rol})`).join(", ") || "-"}
 - Clasificación — gravedad: ${clasifGravedad || "-"}, probabilidad de repetición: ${clasifProbabilidad || "-"}
  
-Analiza esta información con ICAM y PEEPO. Responde solo con el JSON indicado.
+Analiza esta información con ICAM y PEEPO. Si hay fotografías adjuntas, obsérvalas para identificar factores de Equipos y Entorno. Responde solo con el JSON indicado.
 `.trim();
  
-  // Solo texto (sin fotos) y modelo Haiku: el modelo Sonnet + fotos estaba tardando
-  // entre 15 y 30+ segundos por llamada (variable), y Netlify corta la función a los
-  // 30s exactos — eso causaba "Failed to fetch"/504 de forma intermitente pero
-  // frecuente. Quitar las fotos de esta llamada y usar Haiku (mucho más rápido)
-  // deja bastante margen bajo el límite. Las fotos completas siguen incluyéndose
-  // igual en el Word/PDF final — esto solo afecta lo que la IA "ve" para analizar.
   const content = [{ type: "text", text: textoResumen }];
+ 
+  // Máximo 1 foto en el análisis: las fotos son evidencia importante, así que las
+  // mantenemos, pero cada una suma varios segundos de procesamiento y el límite de
+  // Netlify es 30s exactos. Las fotos completas (todas) sí se incluyen igual en el
+  // Word/PDF final — este límite es solo para lo que la IA ve al analizar.
+  const imgs = (evidencias || []).slice(0, 1);
+  for (const img of imgs) {
+    if (!img.dataUrl) continue;
+    const match = img.dataUrl.match(/^data:(image\/\w+);base64,(.+)$/);
+    if (!match) continue;
+    content.push({
+      type: "image",
+      source: { type: "base64", media_type: match[1], data: match[2] },
+    });
+  }
  
   try {
     const resp = await fetch("https://api.anthropic.com/v1/messages", {
@@ -132,7 +140,10 @@ Analiza esta información con ICAM y PEEPO. Responde solo con el JSON indicado.
         "anthropic-version": "2023-06-01",
       },
       body: JSON.stringify({
-        model: "claude-haiku-4-6",
+        // Permite forzar otro modelo pasando "model" en el body (uso interno para
+        // probar alias de modelo sin tener que redesplegar); por defecto usa Sonnet,
+        // que es el que confirmamos que funciona en esta cuenta.
+        model: (typeof payload.model === "string" && payload.model.trim()) || "claude-sonnet-4-6",
         // 1700: suficiente para las 4 categorías de causas + medioVerificacion sin
         // cortarse a la mitad (con 1300 se cortaba -> "La IA no devolvió un JSON válido"),
         // pero sin pedir tanto texto que sume tiempo innecesario.
