@@ -27,15 +27,20 @@ Tu tarea: a partir de la información objetiva que te da un prevencionista (desc
   "icam": [ { "texto": "hallazgo breve", "peepo": "P" | "E-Entorno" | "E-Equipos" | "Proc" | "O" } ],
   "icamAnalysis": {
     "eventoConsecuencias": "string",
-    "barreras": ["string", ...],
-    "accionesInmediatas": ["string", ...],
-    "factoresContribuyentes": ["string", ...],
-    "factoresOrganizacionales": ["string", ...],
-    "causasSubyacentes": "string"
+    "actosSubestandares": ["string", ...],
+    "condicionesSubestandares": ["string", ...],
+    "factoresPersonales": ["string", ...],
+    "factoresTrabajo": ["string", ...]
   },
   "accionesCorrectivasSugeridas": [
-    { "accion": "string", "responsableSugerido": "string", "plazoSugerido": "string" }
+    { "accion": "string", "responsableSugerido": "string", "plazoSugerido": "string", "medioVerificacion": "string" }
   ],
+  "danoPotencial": {
+    "naturaleza": "string",
+    "costoRealDetalle": "string",
+    "costoPotencialDetalle": "string",
+    "objetoRelacionado": "string"
+  },
   "preguntasFaltantes": ["string", ...],
   "confianza": "alta" | "media" | "baja"
 }
@@ -43,11 +48,17 @@ Tu tarea: a partir de la información objetiva que te da un prevencionista (desc
 Reglas estrictas:
 - NUNCA inventes datos, nombres, fechas o hechos que no estén en la información proporcionada o visibles en las fotos.
 - Si la información es insuficiente para un campo, dilo en "preguntasFaltantes" (preguntas específicas y breves) y deja ese campo con un array vacío o string vacío — no lo rellenes con suposiciones.
-- Usa terminología de la Ley 29783: causas inmediatas = actos y condiciones subestándares; causas básicas = factores personales y factores del trabajo.
 - Cada hallazgo PEEPO debe ser una frase breve y concreta, basada en evidencia real citada en la descripción o visible en las fotos.
-- Para "accionesCorrectivasSugeridas": propón entre 2 y 5 acciones correctivas concretas y accionables, derivadas directamente de las causas inmediatas, básicas y factores identificados (no genéricas). Para "responsableSugerido" usa SIEMPRE uno de los cargos reales de ZGRADA listados en la REFERENCIA INTERNA de arriba, nunca un cargo genérico inventado (por ejemplo, no uses "Jefe SSOMA") ni un nombre propio de persona salvo que la información proporcionada ya indique explícitamente quién debe asumirla. Para "plazoSugerido" usa un plazo razonable en días, coherente con la gravedad del caso y con los plazos del RISST de ZGRADA y de la Ley 29783 / DS 005-2012-TR cuando apliquen.
+- CAUSAS INMEDIATAS (lo observable): "actosSubestandares" = comportamiento inseguro de una persona (ej. sin autorización, sin EPP, anuló un seguro, velocidad/postura insegura; máx. 5). "condicionesSubestandares" = condición insegura del lugar/equipo (ej. resguardo ausente, herramienta defectuosa, orden/limpieza, señalización, iluminación; máx. 3, el formato solo tiene 3 filas). Cada ítem: frase breve + evidencia entre paréntesis (ej. "No usó arnés (foto 2)"). Sin evidencia real, no lo incluyas.
+- CAUSAS BÁSICAS (raíz — derívalas de las causas inmediatas y la evidencia, nunca inventadas): "factoresPersonales" = falta de capacitación/habilidad, fatiga, motivación (máx. 5). "factoresTrabajo" = supervisión deficiente, AST/IPERC inexistente o incompleto, mantenimiento, diseño de ingeniería, compras (máx. 3). Evidencia breve entre paréntesis en cada ítem; sin base suficiente, indícalo en "preguntasFaltantes" en vez de inventar.
+- "accionesCorrectivasSugeridas" (2 a 5, cada una ligada a una causa ya identificada, nunca genérica/repetida): aplica la JERARQUÍA DE CONTROLES (eliminación > sustitución > ingeniería > administrativos > EPP) — prioriza el control más eficaz viable, no solo capacitación/EPP. "responsableSugerido": SIEMPRE un cargo real de ZGRADA (arriba), nunca inventado. "plazoSugerido": días, según gravedad/RISST/Ley 29783. "medioVerificacion": cómo se comprobará (ej. "reporte fotográfico", "check-list firmado"). Nunca inventes artículos legales ni disposiciones del RISST no dadas. Sin info suficiente, no generes la acción — indícalo en "preguntasFaltantes".
 - "confianza" refleja qué tan completa es la información recibida para sustentar el análisis.
-- Sé breve y directo en cada campo de texto (máximo ~20 palabras por frase) para que la respuesta sea rápida de generar. No repitas información entre secciones.
+- Para "danoPotencial" (sección 10 del formato, DAÑO POTENCIAL — distinta de la lesión/daño real ya registrado):
+  * "naturaleza": si "tipo" es "Incidente" (cuasi-accidente, sin daño real), describe el daño POTENCIAL que pudo haber ocurrido si las circunstancias hubieran sido distintas, con frases tipo "Potencial de [golpe/corte/fractura/caída a distinto nivel/atrapamiento/quemadura/electrocución/lesión grave/fatalidad/etc.]", basándote en la descripción y fotos. Si "tipo" es "Accidente leve" o "Accidente grave" (ya hubo daño real registrado), deja este campo como string vacío "" salvo que identifiques un riesgo adicional claro que no se materializó.
+  * "costoRealDetalle": breve (máx. 12 palabras). Si no hubo daño real (fue un incidente), escribe algo como "S/ 0.00 (sin daño real)". Si sí hubo daño/lesión real, NO inventes una cifra exacta salvo que la información la mencione explícitamente — en su lugar indica qué factores deben considerarse (ej: "Por determinar — incluye atención médica y horas-hombre perdidas").
+  * "costoPotencialDetalle": breve (máx. 12 palabras). NUNCA inventes un monto exacto — usa algo como "Por determinar según el daño que pudo haberse producido", salvo que la información dé una base real para estimarlo.
+  * "objetoRelacionado": identifica automáticamente el objeto, herramienta, equipo, material o sustancia directamente relacionado con el contacto (ej: "Amoladora eléctrica + disco de corte", "Andamio metálico", "Thinner/solvente"), a partir de la descripción y las fotos — el prevencionista NO debe tener que escribirlo a mano. Si no hay información suficiente para identificarlo, deja el campo vacío "" (no inventes un objeto que no se mencione ni se vea en las fotos).
+- Sé breve y directo en cada campo de texto (máximo ~15 palabras por causa, incluida la evidencia entre paréntesis; máximo ~18 palabras por acción correctiva; máximo ~8 palabras por "medioVerificacion") para que la respuesta sea rápida de generar. No repitas información entre secciones.
 - Responde ÚNICAMENTE con el JSON, sin explicaciones, sin markdown, sin backticks.`;
 
 exports.handler = async (event) => {
@@ -108,9 +119,12 @@ Analiza esta información con ICAM y PEEPO. Si hay fotografías adjuntas, obsér
 
   content.push({ type: "text", text: textoResumen });
 
-  // Máximo 2 fotos: cada foto de más suma tiempo de procesamiento y puede hacer
-  // que la función se pase del límite de 30s de Netlify (timeout → error 502/504).
-  const imgs = (evidencias || []).slice(0, 2);
+  // Máximo 1 foto: cada foto adicional suma varios segundos de procesamiento y,
+  // sumado al análisis de causas (más detallado ahora), puede hacer que la función
+  // se pase del límite de 30s de Netlify (timeout → error 502/504 o "Failed to fetch").
+  // Las fotos completas (todas) sí se incluyen igual en el Word/PDF final — este
+  // límite es solo para la llamada de análisis con IA.
+  const imgs = (evidencias || []).slice(0, 1);
   for (const img of imgs) {
     if (!img.dataUrl) continue;
     const match = img.dataUrl.match(/^data:(image\/\w+);base64,(.+)$/);
@@ -131,10 +145,11 @@ Analiza esta información con ICAM y PEEPO. Si hay fotografías adjuntas, obsér
       },
       body: JSON.stringify({
         model: "claude-sonnet-4-6",
-        // 1600: suficiente para que el JSON completo (con RISST) no se corte a la mitad,
-        // pero sin pedir tanto texto que la respuesta tarde más de lo necesario.
-        // (con 1300 se cortaba antes de terminar -> "La IA no devolvió un JSON válido").
-        max_tokens: 1600,
+        // 1700: suficiente para las 4 categorías de causas + medioVerificacion sin
+        // cortarse a la mitad (con 1300 se cortaba -> "La IA no devolvió un JSON válido"),
+        // pero sin pedir tanto texto que sume tiempo innecesario (cada token de más
+        // acerca la respuesta al límite de 30s de Netlify).
+        max_tokens: 1700,
         system: SYSTEM_PROMPT,
         messages: [{ role: "user", content }],
       }),
