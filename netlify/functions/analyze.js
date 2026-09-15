@@ -7,9 +7,9 @@
 //
 // La llave ANTHROPIC_API_KEY se lee de las variables de entorno de Netlify —
 // nunca viaja al navegador del usuario.
- 
+
 const SYSTEM_PROMPT = `Eres un asistente experto en investigación de accidentes e incidentes laborales, especializado en la metodología ICAM (Incident Cause Analysis Method) y la herramienta PEEPO, conforme a la Ley 29783 (Ley de Seguridad y Salud en el Trabajo del Perú) y su reglamento DS 005-2012-TR, y al Reglamento Interno de Seguridad y Salud en el Trabajo (RISST) de ZGRADA INGENIEROS S.A.C. (código ZG.SIG-RI-001).
- 
+
 REFERENCIA INTERNA — RISST de ZGRADA INGENIEROS S.A.C. (úsala para que tus recomendaciones encajen con la estructura real de la empresa):
 - ZGRADA no tiene Comité de Seguridad y Salud en el Trabajo constituido (tiene menos de 20 colaboradores). La responsabilidad de la prevención recae en el Jefe de Prevención de Riesgos Laborales (PdRL) y su Departamento de Prevención de Riesgos Laborales / SST.
 - Cargos reales que existen en ZGRADA (usa el que mejor corresponda como "responsableSugerido", nunca inventes cargos que no aparecen aquí):
@@ -20,9 +20,9 @@ REFERENCIA INTERNA — RISST de ZGRADA INGENIEROS S.A.C. (úsala para que tus re
   * "Jefe de Brigada de Emergencias" — solo cuando la causa raíz es de preparación/respuesta a emergencias.
 - Plazos internos de referencia del RISST (úsalos cuando la acción correctiva sea de investigación/reporte, no de ejecución de fondo): reporte preliminar de incidente el mismo día del evento; informe de investigación de incidente dentro de 5 días hábiles; informe de accidente dentro de 24 horas de ocurrido. Para acciones correctivas de fondo (capacitación, cambio de procedimiento, mantenimiento o reemplazo de equipos, señalización, etc.) usa un plazo razonable en días según la gravedad, siguiendo el criterio del RISST de hacer seguimiento "dentro del plazo establecido".
 - Usa terminología propia del RISST cuando aplique: "Análisis de Seguridad del Trabajo (AST)", "Permiso de Trabajo", "Identificación de Peligros y Evaluación de Riesgos (IPERC)", "actos y condiciones subestándares".
- 
+
 Tu tarea: a partir de la información objetiva que te da un prevencionista (descripción del suceso, actividad, evidencia fotográfica, testigos, clasificación), realizar el análisis PEEPO e ICAM conforme a la Ley 29783/DS 005-2012-TR y al RISST de ZGRADA, sugerir acciones correctivas, y devolver SOLO un objeto JSON válido con esta forma exacta, sin texto adicional antes ni después:
- 
+
 {
   "icam": [ { "texto": "hallazgo breve", "peepo": "P" | "E-Entorno" | "E-Equipos" | "Proc" | "O" } ],
   "icamAnalysis": {
@@ -44,7 +44,7 @@ Tu tarea: a partir de la información objetiva que te da un prevencionista (desc
   "preguntasFaltantes": ["string", ...],
   "confianza": "alta" | "media" | "baja"
 }
- 
+
 Reglas estrictas:
 - NUNCA inventes datos, nombres, fechas o hechos que no estén en la información proporcionada o visibles en las fotos.
 - Si la información es insuficiente para un campo, dilo en "preguntasFaltantes" (preguntas específicas y breves) y deja ese campo con un array vacío o string vacío — no lo rellenes con suposiciones.
@@ -60,21 +60,21 @@ Reglas estrictas:
   * "objetoRelacionado": identifica automáticamente el objeto, herramienta, equipo, material o sustancia directamente relacionado con el contacto (ej: "Amoladora eléctrica + disco de corte", "Andamio metálico", "Thinner/solvente"), a partir de la descripción y las fotos — el prevencionista NO debe tener que escribirlo a mano. Si no hay información suficiente para identificarlo, deja el campo vacío "" (no inventes un objeto que no se mencione ni se vea en las fotos).
 - Sé breve y directo en cada campo de texto (máximo ~15 palabras por causa, incluida la evidencia entre paréntesis; máximo ~18 palabras por acción correctiva; máximo ~8 palabras por "medioVerificacion") para que la respuesta sea rápida de generar. No repitas información entre secciones.
 - Responde ÚNICAMENTE con el JSON, sin explicaciones, sin markdown, sin backticks.`;
- 
+
 exports.handler = async (event) => {
   const headers = {
     "Access-Control-Allow-Origin": "*",
     "Access-Control-Allow-Headers": "Content-Type",
     "Access-Control-Allow-Methods": "POST, OPTIONS",
   };
- 
+
   if (event.httpMethod === "OPTIONS") {
     return { statusCode: 200, headers, body: "" };
   }
   if (event.httpMethod !== "POST") {
     return { statusCode: 405, headers, body: JSON.stringify({ error: "Method not allowed" }) };
   }
- 
+
   const apiKey = (process.env.ANTHROPIC_API_KEY || "").trim();
   if (!apiKey) {
     return {
@@ -83,21 +83,21 @@ exports.handler = async (event) => {
       body: JSON.stringify({ error: "ANTHROPIC_API_KEY no está configurada en Netlify (Site settings → Environment variables)." }),
     };
   }
- 
+
   let payload;
   try {
     payload = JSON.parse(event.body || "{}");
   } catch (e) {
     return { statusCode: 400, headers, body: JSON.stringify({ error: "JSON inválido en la solicitud." }) };
   }
- 
+
   const {
     fecha, hora, area, actividad, tipo, descripcion,
     naturalezaLesion, parteCuerpo, diasDescanso,
     entrevistas, clasifGravedad, clasifProbabilidad,
     evidencias, // array of { dataUrl } — imágenes en base64
   } = payload;
- 
+
   const textoResumen = `
 DATOS DEL SUCESO:
 - Fecha/hora: ${fecha || "-"} ${hora || "-"}
@@ -110,12 +110,12 @@ DATOS DEL SUCESO:
 - Días de descanso médico: ${diasDescanso || "-"}
 - Personas involucradas / testigos: ${(entrevistas || []).map(e => `${e.nombre} (${e.rol})`).join(", ") || "-"}
 - Clasificación — gravedad: ${clasifGravedad || "-"}, probabilidad de repetición: ${clasifProbabilidad || "-"}
- 
+
 Analiza esta información con ICAM y PEEPO. Si hay fotografías adjuntas, obsérvalas para identificar factores de Equipos y Entorno. Responde solo con el JSON indicado.
 `.trim();
- 
+
   const content = [{ type: "text", text: textoResumen }];
- 
+
   // Máximo 1 foto en el análisis: las fotos son evidencia importante, así que las
   // mantenemos, pero cada una suma varios segundos de procesamiento y el límite de
   // Netlify es 30s exactos. Las fotos completas (todas) sí se incluyen igual en el
@@ -130,7 +130,7 @@ Analiza esta información con ICAM y PEEPO. Si hay fotografías adjuntas, obsér
       source: { type: "base64", media_type: match[1], data: match[2] },
     });
   }
- 
+
   try {
     const resp = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
@@ -140,10 +140,11 @@ Analiza esta información con ICAM y PEEPO. Si hay fotografías adjuntas, obsér
         "anthropic-version": "2023-06-01",
       },
       body: JSON.stringify({
-        // Permite forzar otro modelo pasando "model" en el body (uso interno para
-        // probar alias de modelo sin tener que redesplegar); por defecto usa Sonnet,
-        // que es el que confirmamos que funciona en esta cuenta.
-        model: (typeof payload.model === "string" && payload.model.trim()) || "claude-sonnet-4-6",
+        // claude-haiku-4-5: confirmado que funciona en esta cuenta y responde en
+        // ~12-16s con foto incluida (vs. 15-30+s de Sonnet), dejando margen real bajo
+        // el límite de 30s de Netlify. Se puede forzar otro modelo pasando "model" en
+        // el body si hiciera falta probar algo puntualmente.
+        model: (typeof payload.model === "string" && payload.model.trim()) || "claude-haiku-4-5",
         // 1700: suficiente para las 4 categorías de causas + medioVerificacion sin
         // cortarse a la mitad (con 1300 se cortaba -> "La IA no devolvió un JSON válido"),
         // pero sin pedir tanto texto que sume tiempo innecesario.
@@ -152,17 +153,17 @@ Analiza esta información con ICAM y PEEPO. Si hay fotografías adjuntas, obsér
         messages: [{ role: "user", content }],
       }),
     });
- 
+
     if (!resp.ok) {
       const errText = await resp.text();
       const diag = `[Diagnóstico: la función recibió una llave de ${apiKey.length} caracteres, que empieza con "${apiKey.slice(0,15)}" y termina en "${apiKey.slice(-6)}"]`;
       return { statusCode: resp.status, headers, body: JSON.stringify({ error: `Error de la API de Claude: ${errText} ${diag}` }) };
     }
- 
+
     const data = await resp.json();
     const rawText = (data.content || []).map(b => b.text || "").join("").trim();
     const cutOff = data.stop_reason === "max_tokens";
- 
+
     let parsed;
     try {
       const cleaned = rawText.replace(/^```json\s*|```$/g, "").trim();
@@ -186,10 +187,9 @@ Analiza esta información con ICAM y PEEPO. Si hay fotografías adjuntas, obsér
         return { statusCode: 502, headers, body: JSON.stringify({ error: msg, raw: rawText }) };
       }
     }
- 
+
     return { statusCode: 200, headers, body: JSON.stringify(parsed) };
   } catch (err) {
     return { statusCode: 500, headers, body: JSON.stringify({ error: "Fallo al llamar a la API de Claude: " + err.message }) };
   }
 };
- 
